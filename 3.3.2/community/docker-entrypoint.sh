@@ -203,7 +203,7 @@ chown -R $NEO4J_USER_NAME /data
 chgrp -R $NEO4J_GROUP_NAME /data
 
 if [ "${cmd}" == "neo4j" ]; then
-    exec sudo -E -u $NEO4J_USER_NAME neo4j start
+    exec sudo -E -u $NEO4J_USER_NAME neo4j console
 else
     exec sudo -E -u $NEO4J_USER_NAME "$@"
 fi
