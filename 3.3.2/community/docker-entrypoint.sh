@@ -1,5 +1,8 @@
 #!/bin/bash -eu
 
+apk update
+apk add sudo
+
 cmd="$1"
 
 if [[ "${cmd}" != *"neo4j"* ]]; then
@@ -168,10 +171,39 @@ for i in $( set | grep ^NEO4J_ | awk -F'=' '{print $1}' | sort -rn ); do
     fi
 done
 
+#add neo4j group if not exists
+if getent group $NEO4J_GROUP_NAME; then
+  echo "Group $NEO4J_GROUP_NAME already exists"
+else
+  echo "Group $NEO4J_GROUP_NAME does not exist, creating it with gid=$NEO4J_GROUP_ID"
+  addgroup -g $NEO4J_GROUP_ID $NEO4J_GROUP_NAME
+fi
+
+# add neo4j user if not exists
+if id -u $NEO4J_USER_NAME 2>/dev/null; then
+  echo "User $NEO4J_USER_NAME already exists"
+else
+  echo "User $NEO4J_USER_NAME does not exist, creating it with uid=$NEO4J_USER_ID"
+  adduser $NEO4J_USER_NAME -u $NEO4J_USER_ID -g "" -G $NEO4J_GROUP_NAME -s /bin/false -D
+fi 
+
 [ -f "${EXTENSION_SCRIPT:-}" ] && . ${EXTENSION_SCRIPT}
 
+
+# change ownership and group of all folders except import
+# because import is a read-only mount from our data folder on NFS
+for subdir in $(ls -A /var/lib/neo4j | grep -v import) 
+do
+
+  chown -R $NEO4J_USER_NAME /var/lib/neo4j/$subdir
+  chgrp -R $NEO4J_GROUP_NAME /var/lib/neo4j/$subdir
+done
+
+chown -R $NEO4J_USER_NAME /data
+chgrp -R $NEO4J_GROUP_NAME /data
+
 if [ "${cmd}" == "neo4j" ]; then
-    exec neo4j console
+    exec sudo -E -u $NEO4J_USER_NAME neo4j start
 else
-    exec "$@"
+    exec sudo -E -u $NEO4J_USER_NAME "$@"
 fi
