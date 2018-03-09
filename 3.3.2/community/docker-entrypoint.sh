@@ -192,15 +192,9 @@ fi
 
 # change ownership and group of all folders except import
 # because import is a read-only mount from our data folder on NFS
-for subdir in $(ls -A /var/lib/neo4j | grep -v import) 
-do
+chown -R $NEO4J_USER_NAME:$NEO4J_GROUP_NAME /var/lib/neo4j
+chown -R $NEO4J_USER_NAME:$NEO4J_GROUP_NAME /data
 
-  chown -R $NEO4J_USER_NAME /var/lib/neo4j/$subdir
-  chgrp -R $NEO4J_GROUP_NAME /var/lib/neo4j/$subdir
-done
-
-chown -R $NEO4J_USER_NAME /data
-chgrp -R $NEO4J_GROUP_NAME /data
 
 if [ "${cmd}" == "neo4j" ]; then
     exec sudo -E -u $NEO4J_USER_NAME neo4j console
